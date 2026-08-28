@@ -2,6 +2,7 @@ package expo.modules.appmetrics.storage
 
 import android.content.Context
 import android.util.Log
+import androidx.room.withTransaction
 import expo.modules.appmetrics.AppMetadata
 import expo.modules.appmetrics.AppMetricsPreferences
 import expo.modules.appmetrics.SQLITE_MAX_BIND_VARIABLES
@@ -137,6 +138,29 @@ class SessionManager(
     )
   }
 
+  suspend fun storeCrashReportIfNew(sessionId: String, payload: String, log: LogRecord): Boolean {
+    val logs = logsWithSession(listOf(log), sessionId)
+    val inserted = database.withTransaction {
+      if (database.crashReportDao().getBySessionId(sessionId) != null) {
+        false
+      } else {
+        database.crashReportDao().upsert(
+          CrashReportEntity(
+            sessionId = sessionId,
+            payload = payload,
+            createdAt = TimeUtils.getCurrentTimestampInISOFormat()
+          )
+        )
+        insertLogs(logs)
+        true
+      }
+    }
+    if (inserted) {
+      notifyLogsInserted(logs.map { it.logId })
+    }
+    return inserted
+  }
+
   suspend fun getCrashReport(sessionId: String): String? =
     database.crashReportDao().getBySessionId(sessionId)?.payload
 
@@ -196,14 +220,24 @@ class SessionManager(
     logs: List<LogRecord>,
     sessionId: String
   ) {
-    val logsWithSession = logs.map { log ->
+    val logsWithSession = logsWithSession(logs, sessionId)
+    insertLogs(logsWithSession)
+    notifyLogsInserted(logsWithSession.map { it.logId })
+  }
+
+  private fun logsWithSession(logs: List<LogRecord>, sessionId: String): List<LogRecord> =
+    logs.map { log ->
       log.copy(
         sessionId = sessionId,
         attributes = mergeGlobalAttributesIntoJsonString(log.attributes)
       )
     }
-    database.logDao().insertAll(logsWithSession)
-    val logIds = logsWithSession.map { it.logId }
+
+  private suspend fun insertLogs(logs: List<LogRecord>) {
+    database.logDao().insertAll(logs)
+  }
+
+  private suspend fun notifyLogsInserted(logIds: List<String>) {
     logsInsertListeners.forEach { listener ->
       try {
         listener.onLogsInserted(logIds)

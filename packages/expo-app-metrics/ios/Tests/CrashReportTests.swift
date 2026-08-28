@@ -168,10 +168,11 @@ struct CrashReportTests {
   struct ToLogRecordTests {
     @Test
     func `builds a fatal exception log for a Mach exception`() throws {
+      let timestampEnd = Date(timeIntervalSince1970: 1_699_999_000)
       let ingestedAt = Date(timeIntervalSince1970: 1_700_000_000)
       let report = makeCrashReport(
-        timestampBegin: ingestedAt,
-        timestampEnd: ingestedAt,
+        timestampBegin: timestampEnd.addingTimeInterval(-3600),
+        timestampEnd: timestampEnd,
         ingestedAt: ingestedAt,
         exceptionType: 1,
         exceptionCode: 2,
@@ -184,7 +185,7 @@ struct CrashReportTests {
 
       #expect(log.name == "exception")
       #expect(log.severity == .fatal)
-      #expect(log.timestamp == ingestedAt.ISO8601Format())
+      #expect(log.timestamp == timestampEnd.ISO8601Format())
       #expect(attributes["exception.type"] as? String == "EXC_BAD_ACCESS")
       #expect(attributes["exception.message"] as? String == "Namespace SIGNAL, Code 11")
       #expect(attributes["expo.error.source"] as? String == "nativeCrash")
@@ -193,7 +194,7 @@ struct CrashReportTests {
       #expect(attributes["expo.crash.exception_type_code"] as? Int == 1)
       #expect(attributes["expo.crash.exception_code"] as? Int == 2)
       #expect(attributes["expo.crash.signal"] as? String == "SIGSEGV")
-      #expect(attributes["expo.crash.signal_code"] as? Int == 11)
+      #expect(attributes["expo.crash.signal_number"] as? Int == 11)
       #expect(attributes["expo.crash.termination_reason"] as? String == "Namespace SIGNAL, Code 11")
     }
 
@@ -227,8 +228,8 @@ struct CrashReportTests {
     }
 
     @Test
-    func `renders at most fifty stack frames and reports the omitted count`() throws {
-      let frames = (0..<53).map { index in
+    func `renders at most twenty-five attributed stack frames and reports the omitted count`() throws {
+      let attributedFrames = (0..<28).map { index in
         CrashReport.CallStackTree.Frame(
           binaryName: "TestApp",
           binaryUUID: nil,
@@ -239,13 +240,26 @@ struct CrashReportTests {
           symbol: "frame\(index)"
         )
       }
+      let unattributedFrame = CrashReport.CallStackTree.Frame(
+        binaryName: "TestApp",
+        binaryUUID: nil,
+        address: nil,
+        offsetIntoBinaryTextSegment: nil,
+        sampleCount: nil,
+        subFrames: nil,
+        symbol: "unattributed"
+      )
       let report = makeCrashReport(
         timestampBegin: Date.now,
         timestampEnd: Date.now,
         callStackTree: CrashReport.CallStackTree(callStacks: [
           CrashReport.CallStackTree.CallStack(
             threadAttributed: true,
-            callStackRootFrames: frames
+            callStackRootFrames: attributedFrames
+          ),
+          CrashReport.CallStackTree.CallStack(
+            threadAttributed: false,
+            callStackRootFrames: [unattributedFrame]
           ),
         ])
       )
@@ -253,11 +267,11 @@ struct CrashReportTests {
       let attributes = try #require(report.toLogRecord().attributes?.value as? [String: Any])
       let stacktrace = try #require(attributes["exception.stacktrace"] as? String)
       let lines = stacktrace.split(separator: "\n")
-      #expect(lines.count == 51)
+      #expect(lines.count == 26)
       #expect(lines.first == "frame0")
-      #expect(lines[49] == "frame49")
+      #expect(lines[24] == "frame24")
       #expect(lines.last == "… +3 more frames")
-      #expect(!stacktrace.contains("frame50"))
+      #expect(!stacktrace.contains("unattributed"))
     }
   }
 }

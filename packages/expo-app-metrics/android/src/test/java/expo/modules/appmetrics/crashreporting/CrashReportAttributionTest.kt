@@ -85,11 +85,13 @@ class CrashReportAttributionTest {
   fun `does not duplicate the crash log when a report is reprocessed`() =
     runTest {
       sessionManager.startSessionWithIdAt("crashed-session", "2023-11-14T22:00:00.000Z")
+      val listenerInvocations = mutableListOf<List<String>>()
+      sessionManager.addLogsInsertListener { listenerInvocations.add(it) }
 
       attribute("crashed-session", CrashOrigin.JVM_FILE)
       attribute("crashed-session", CrashOrigin.JVM_FILE)
 
-      assertEquals(1, sessionManager.getLogsForSession("crashed-session").size)
+      assertEquals(listOf(listOf("native-crash:crashed-session")), listenerInvocations)
     }
 
   @Test

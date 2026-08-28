@@ -135,19 +135,23 @@ class CrashReportTest {
     assertEquals("Native crash", attributes["exception.message"])
     assertNull(attributes["exception.stacktrace"])
     assertEquals("SIGSEGV", attributes["expo.crash.signal"])
-    assertEquals(11L, attributes["expo.crash.signal_code"])
+    assertEquals(11L, attributes["expo.crash.signal_number"])
     assertEquals("Native crash", attributes["expo.crash.termination_reason"])
   }
 
   @Test
-  fun `renders at most fifty stack frames and reports the omitted count`() {
+  fun `renders at most twenty-five attributed stack frames and reports the omitted count`() {
     val report = CrashReport(
       exceptionReason = "boom",
       callStackTree = CrashReport.CallStackTree(
         callStacks = listOf(
           CrashReport.CallStackTree.CallStack(
             threadAttributed = true,
-            callStackRootFrames = (0 until 53).map { CrashReport.CallStackTree.Frame("frame$it") }
+            callStackRootFrames = (0 until 28).map { CrashReport.CallStackTree.Frame("frame$it") }
+          ),
+          CrashReport.CallStackTree.CallStack(
+            threadAttributed = false,
+            callStackRootFrames = listOf(CrashReport.CallStackTree.Frame("unattributed"))
           )
         )
       ),
@@ -167,11 +171,11 @@ class CrashReportTest {
       )
     )
     val lines = requireNotNull(attributes["exception.stacktrace"] as? String).lines()
-    assertEquals(51, lines.size)
+    assertEquals(26, lines.size)
     assertEquals("frame0", lines.first())
-    assertEquals("frame49", lines[49])
+    assertEquals("frame24", lines[24])
     assertEquals("… +3 more frames", lines.last())
-    assertFalse(lines.contains("frame50"))
+    assertFalse(lines.contains("unattributed"))
   }
 
   // MARK: JSON encoding — the payload is the cross-platform contract with types.ts

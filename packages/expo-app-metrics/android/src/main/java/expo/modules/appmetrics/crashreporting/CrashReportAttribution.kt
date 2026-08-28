@@ -30,10 +30,13 @@ suspend fun attributeAndStoreCrashReport(
       // id-less JVM file (a crash before the main session existed) → orphan.
       else -> null
     }
-    val alreadyHasCrashReport = target != null && sessionManager.getCrashReport(target) != null
-    sessionManager.setCrashReport(target, report.encodeToJsonString())
-    if (target != null && !alreadyHasCrashReport) {
-      sessionManager.addLogs(listOf(report.toLogRecord(target, logDetails)), sessionId = target)
+    val payload = report.encodeToJsonString()
+    if (target != null) {
+      // This works now, but the crash may be added before pending metric listener is added
+      // Should be fixed with https://linear.app/expo/issue/ENG-21193/sdkandroid-replace-pending-metricslisteners-mechanism-with-the-cursors
+      sessionManager.storeCrashReportIfNew(target, payload, report.toLogRecord(target, logDetails))
+    } else {
+      sessionManager.setCrashReport(null, payload)
     }
   }.onFailure {
     Log.e(TAG, "Failed to persist a crash report", it)

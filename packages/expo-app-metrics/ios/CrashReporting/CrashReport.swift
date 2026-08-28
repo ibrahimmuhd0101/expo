@@ -6,7 +6,7 @@
 /// payload time window. Unhandled JavaScript errors are recorded separately as `exception` log
 /// events (see `ErrorReport`).
 public struct CrashReport: Codable, Sendable {
-  private static let maxLogStackFrames = 50
+  private static let maxLogStackFrames = 25
   private static let maxLogStacktraceLength = 65_536
 
   /// Mach exception type (e.g. EXC_BAD_ACCESS, EXC_CRASH).
@@ -110,7 +110,7 @@ public struct CrashReport: Codable, Sendable {
     }
     if let signal {
       attributes["expo.crash.signal"] = signalName(for: signal)
-      attributes["expo.crash.signal_code"] = signal
+      attributes["expo.crash.signal_number"] = signal
     }
     if let terminationReason {
       attributes["expo.crash.termination_reason"] = terminationReason
@@ -123,7 +123,8 @@ public struct CrashReport: Codable, Sendable {
       name: "exception",
       attributes: attributes,
       severity: .fatal,
-      timestamp: ingestedAt.ISO8601Format()
+      // MetricKit gives a time window; its end is the tightest crash-time bound and matches Android.
+      timestamp: timestampEnd.ISO8601Format()
     )
   }
 
@@ -150,18 +151,17 @@ public struct CrashReport: Codable, Sendable {
     guard let callStacks = callStackTree?.callStacks else {
       return nil
     }
-    let orderedStacks =
-      callStacks.filter { $0.threadAttributed == true }
-      + callStacks.filter { $0.threadAttributed != true }
+    let attributedStacks = callStacks.filter { $0.threadAttributed == true }
+    let selectedStacks = attributedStacks.isEmpty ? callStacks : attributedStacks
+    var frames: [CallStackTree.Frame] = []
+    var totalFrames = 0
     var lines: [String] = []
-    for callStack in orderedStacks {
-      var frames: [CallStackTree.Frame] = []
-      var totalFrames = 0
+    for callStack in selectedStacks {
       collectFrames(callStack.callStackRootFrames ?? [], into: &frames, total: &totalFrames)
-      lines.append(contentsOf: frames.map(renderFrame))
-      if totalFrames > frames.count {
-        lines.append("… +\(totalFrames - frames.count) more frames")
-      }
+    }
+    lines.append(contentsOf: frames.map(renderFrame))
+    if totalFrames > frames.count {
+      lines.append("… +\(totalFrames - frames.count) more frames")
     }
     guard !lines.isEmpty else {
       return nil

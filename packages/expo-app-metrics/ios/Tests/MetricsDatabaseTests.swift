@@ -563,15 +563,14 @@ struct MetricsDatabaseTests {
   }
 
   @Test
-  func `rolls back the crash report when its log cannot be stored`() throws {
+  func `stores the crash report without a log when the session does not exist`() throws {
     try withTemporaryDatabase { database in
       let log = makeLogRow(sessionId: "missing", severity: "fatal", name: "exception")
 
-      #expect(throws: (any Error).self) {
-        try database.storeCrashReportIfNew(sessionId: "missing", payload: "{}", log: log)
-      }
+      try database.storeCrashReportIfNew(sessionId: "missing", payload: "{}", log: log)
 
-      #expect(try database.getCrashReport(sessionId: "missing") == nil)
+      #expect(try database.getCrashReport(sessionId: "missing") == "{}")
+      #expect(try database.getLogs(sessionId: "missing").isEmpty)
     }
   }
 

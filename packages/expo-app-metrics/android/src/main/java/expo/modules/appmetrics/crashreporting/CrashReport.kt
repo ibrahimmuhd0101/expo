@@ -41,7 +41,7 @@ data class CrashReport(
       put("expo.error.is_fatal", true)
       signal?.let {
         put("expo.crash.signal", signalName(it))
-        put("expo.crash.signal_code", it)
+        put("expo.crash.signal_number", it)
       }
       terminationReason?.let { put("expo.crash.termination_reason", it) }
     }
@@ -56,11 +56,12 @@ data class CrashReport(
   }
 
   private fun renderStacktrace(stackFrames: List<String>?): String? {
-    val frames = stackFrames ?: callStackTree?.callStacks
-      ?.sortedByDescending { it.threadAttributed == true }
-      ?.flatMap { it.callStackRootFrames.orEmpty() }
-      ?.map { it.symbol ?: "<unknown>" }
-      .orEmpty()
+    val callStacks = callStackTree?.callStacks.orEmpty()
+    val attributedStacks = callStacks.filter { it.threadAttributed == true }
+    val selectedStacks = attributedStacks.ifEmpty { callStacks }
+    val frames = stackFrames ?: selectedStacks
+      .flatMap { it.callStackRootFrames.orEmpty() }
+      .map { it.symbol ?: "<unknown>" }
     if (frames.isEmpty()) {
       return null
     }
@@ -142,7 +143,7 @@ data class CrashReport(
     }
 
     private const val MAX_CAUSE_DEPTH = 5
-    private const val MAX_LOG_STACK_FRAMES = 50
+    private const val MAX_LOG_STACK_FRAMES = 25
     private const val MAX_LOG_STACKTRACE_LENGTH = 65_536
 
     private fun signalName(signal: Int): String =
