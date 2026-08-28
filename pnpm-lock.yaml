@@ -4268,7 +4268,7 @@ importers:
   packages/expo-constants:
     dependencies:
       '@expo/env':
-        specifier: workspace:~2.3.0
+        specifier: workspace:~2.4.2
         version: link:../@expo/env
       expo:
         specifier: '*'
