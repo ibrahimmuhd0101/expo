@@ -163,6 +163,103 @@ struct CrashReportTests {
       #expect(report.findMatchingSession(in: []) == nil)
     }
   }
+
+  @Suite("toLogRecord")
+  struct ToLogRecordTests {
+    @Test
+    func `builds a fatal exception log for a Mach exception`() throws {
+      let ingestedAt = Date(timeIntervalSince1970: 1_700_000_000)
+      let report = makeCrashReport(
+        timestampBegin: ingestedAt,
+        timestampEnd: ingestedAt,
+        ingestedAt: ingestedAt,
+        exceptionType: 1,
+        exceptionCode: 2,
+        signal: 11,
+        terminationReason: "Namespace SIGNAL, Code 11"
+      )
+
+      let log = report.toLogRecord()
+      let attributes = try #require(log.attributes?.value as? [String: Any])
+
+      #expect(log.name == "exception")
+      #expect(log.severity == .fatal)
+      #expect(log.timestamp == ingestedAt.ISO8601Format())
+      #expect(attributes["exception.type"] as? String == "EXC_BAD_ACCESS")
+      #expect(attributes["exception.message"] as? String == "Namespace SIGNAL, Code 11")
+      #expect(attributes["expo.error.source"] as? String == "nativeCrash")
+      #expect(attributes["expo.error.is_fatal"] as? Bool == true)
+      #expect(attributes["expo.crash.exception_type"] as? String == "EXC_BAD_ACCESS")
+      #expect(attributes["expo.crash.exception_type_code"] as? Int == 1)
+      #expect(attributes["expo.crash.exception_code"] as? Int == 2)
+      #expect(attributes["expo.crash.signal"] as? String == "SIGSEGV")
+      #expect(attributes["expo.crash.signal_code"] as? Int == 11)
+      #expect(attributes["expo.crash.termination_reason"] as? String == "Namespace SIGNAL, Code 11")
+    }
+
+    @Test
+    func `uses Objective-C exception details`() throws {
+      let report = makeCrashReport(
+        timestampBegin: Date.now,
+        timestampEnd: Date.now,
+        terminationReason: "Application Specific Information",
+        exceptionReason: CrashReport.ExceptionReason(
+          composedMessage: "-[NSNull length]: unrecognized selector",
+          formatString: "%@: unrecognized selector",
+          arguments: ["-[NSNull length]"],
+          exceptionType: "NSInvalidArgumentException",
+          className: "NSException",
+          exceptionName: "NSInvalidArgumentException"
+        )
+      )
+
+      let attributes = try #require(report.toLogRecord().attributes?.value as? [String: Any])
+      #expect(attributes["exception.type"] as? String == "NSInvalidArgumentException")
+      #expect(
+        attributes["exception.message"] as? String ==
+          "Application Specific Information\n-[NSNull length]: unrecognized selector"
+      )
+      #expect(attributes["expo.crash.objc_exception_type"] as? String == "NSInvalidArgumentException")
+      #expect(
+        attributes["expo.crash.objc_exception_message"] as? String ==
+          "-[NSNull length]: unrecognized selector"
+      )
+    }
+
+    @Test
+    func `renders at most fifty stack frames and reports the omitted count`() throws {
+      let frames = (0..<53).map { index in
+        CrashReport.CallStackTree.Frame(
+          binaryName: "TestApp",
+          binaryUUID: nil,
+          address: nil,
+          offsetIntoBinaryTextSegment: nil,
+          sampleCount: nil,
+          subFrames: nil,
+          symbol: "frame\(index)"
+        )
+      }
+      let report = makeCrashReport(
+        timestampBegin: Date.now,
+        timestampEnd: Date.now,
+        callStackTree: CrashReport.CallStackTree(callStacks: [
+          CrashReport.CallStackTree.CallStack(
+            threadAttributed: true,
+            callStackRootFrames: frames
+          ),
+        ])
+      )
+
+      let attributes = try #require(report.toLogRecord().attributes?.value as? [String: Any])
+      let stacktrace = try #require(attributes["exception.stacktrace"] as? String)
+      let lines = stacktrace.split(separator: "\n")
+      #expect(lines.count == 51)
+      #expect(lines.first == "frame0")
+      #expect(lines[49] == "frame49")
+      #expect(lines.last == "… +3 more frames")
+      #expect(!stacktrace.contains("frame50"))
+    }
+  }
 }
 
 private func makeMainSessionRow(id: String, startDate: Date, endDate: Date?) -> SessionRow {
@@ -175,18 +272,28 @@ private func makeMainSessionRow(id: String, startDate: Date, endDate: Date?) -> 
   )
 }
 
-private func makeCrashReport(timestampBegin: Date, timestampEnd: Date) -> CrashReport {
+private func makeCrashReport(
+  timestampBegin: Date,
+  timestampEnd: Date,
+  ingestedAt: Date = Date.now,
+  exceptionType: Int? = 1,
+  exceptionCode: Int? = 1,
+  signal: Int? = 11,
+  terminationReason: String? = nil,
+  exceptionReason: CrashReport.ExceptionReason? = nil,
+  callStackTree: CrashReport.CallStackTree? = nil
+) -> CrashReport {
   return CrashReport(
-    exceptionType: 1,
-    exceptionCode: 1,
-    signal: 11,
-    terminationReason: nil,
+    exceptionType: exceptionType,
+    exceptionCode: exceptionCode,
+    signal: signal,
+    terminationReason: terminationReason,
     virtualMemoryRegionInfo: nil,
-    exceptionReason: nil,
-    callStackTree: nil,
+    exceptionReason: exceptionReason,
+    callStackTree: callStackTree,
     appVersion: "1.0.0",
     timestampBegin: timestampBegin,
     timestampEnd: timestampEnd,
-    ingestedAt: Date.now
+    ingestedAt: ingestedAt
   )
 }
