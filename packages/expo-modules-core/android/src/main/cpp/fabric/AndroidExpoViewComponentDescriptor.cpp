@@ -38,6 +38,16 @@ react::Props::Shared AndroidExpoViewComponentDescriptor::cloneProps(
     filterObjectKeys_
   );
 
+#ifdef RN_SERIALIZABLE_STATE
+  // Since RN 0.87 the overridden `cloneProps` is responsible for populating `Props::rawProps`;
+  // without this call the Java view managers receive an empty props diff.
+  shadowNodeProps->initializeDynamicProps(
+    props ? *props : static_cast<const react::Props &>(*ExpoViewShadowNode<AndroidExpoViewProps>::defaultSharedProps()),
+    rawProps,
+    filterObjectKeys_
+  );
+#endif
+
   // TODO(@lukmccall): We probably can remove this loop
   if (react::ReactNativeFeatureFlags::enableCppPropsIteratorSetter()) {
 #ifdef RN_SERIALIZABLE_STATE
