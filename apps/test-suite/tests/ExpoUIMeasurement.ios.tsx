@@ -23,7 +23,12 @@ type Measurement = {
   pageY: number;
 };
 
-function measureAsync(ref: React.RefObject<View | null>, label = 'view'): Promise<Measurement> {
+type ViewInstance = React.ComponentRef<typeof View>;
+
+function measureAsync(
+  ref: React.RefObject<ViewInstance | null>,
+  label = 'view'
+): Promise<Measurement> {
   return new Promise((resolve, reject) => {
     const node = ref.current;
     if (!node) {
@@ -45,7 +50,7 @@ function delay(ms: number): Promise<void> {
  * mounts when it is on screen and animates in, so there is no single layout callback to wait on.
  */
 async function measureWhenPresented(
-  ref: React.RefObject<View | null>,
+  ref: React.RefObject<ViewInstance | null>,
   label: string,
   timeoutMs = 5000
 ): Promise<Measurement> {
@@ -72,8 +77,8 @@ export async function test(
 
   describe(name, () => {
     it('measures a hosted view where SwiftUI placed it, not where Yoga put its box', async () => {
-      const hostWrapperRef = React.createRef<View>();
-      const hostedRef = React.createRef<View>();
+      const hostWrapperRef = React.createRef<ViewInstance>();
+      const hostedRef = React.createRef<ViewInstance>();
 
       let onLaidOut: () => void;
       const laidOut = new Promise<void>((resolve) => {
@@ -105,9 +110,9 @@ export async function test(
     });
 
     it('measures a hosted view stacked below another hosted view', async () => {
-      const hostWrapperRef = React.createRef<View>();
-      const firstRef = React.createRef<View>();
-      const secondRef = React.createRef<View>();
+      const hostWrapperRef = React.createRef<ViewInstance>();
+      const firstRef = React.createRef<ViewInstance>();
+      const secondRef = React.createRef<ViewInstance>();
 
       let onLaidOut: () => void;
       const laidOut = new Promise<void>((resolve) => {
@@ -142,8 +147,8 @@ export async function test(
     });
 
     it('measures a hosted view in a row, beside a SwiftUI-only sibling', async () => {
-      const hostWrapperRef = React.createRef<View>();
-      const hostedRef = React.createRef<View>();
+      const hostWrapperRef = React.createRef<ViewInstance>();
+      const hostedRef = React.createRef<ViewInstance>();
 
       let onLaidOut: () => void;
       const laidOut = new Promise<void>((resolve) => {
@@ -173,9 +178,9 @@ export async function test(
     });
 
     it('measures a hosted view in a row, beside another hosted view', async () => {
-      const hostWrapperRef = React.createRef<View>();
-      const firstRef = React.createRef<View>();
-      const secondRef = React.createRef<View>();
+      const hostWrapperRef = React.createRef<ViewInstance>();
+      const firstRef = React.createRef<ViewInstance>();
+      const secondRef = React.createRef<ViewInstance>();
 
       let onLaidOut: () => void;
       const laidOut = new Promise<void>((resolve) => {
@@ -210,14 +215,14 @@ export async function test(
     });
 
     it('measures a hosted view when the Host is inside a React Native ScrollView', async () => {
-      const scrollRef = React.createRef<ScrollView>();
+      const scrollRef = React.createRef<React.ComponentRef<typeof ScrollView>>();
       // Anchored outside the `ScrollView`, so it does not move when the content does. Measuring
       // against it gives the box's real position on screen, which is what a touch is compared
       // against — a difference between two views that scroll together would cancel the scroll
       // offset out and never notice if it were wrong.
-      const viewportRef = React.createRef<View>();
-      const hostWrapperRef = React.createRef<View>();
-      const hostedRef = React.createRef<View>();
+      const viewportRef = React.createRef<ViewInstance>();
+      const hostWrapperRef = React.createRef<ViewInstance>();
+      const hostedRef = React.createRef<ViewInstance>();
 
       let onLaidOut: () => void;
       const laidOut = new Promise<void>((resolve) => {
@@ -296,7 +301,7 @@ export async function test(
 
     // A sheet content uses RootNodeKind trait so measurement happens relative to the RNHostView and not the RN's root surface.
     it('measures a hosted view in a sheet relative to itself', async () => {
-      const hostedRef = React.createRef<View>();
+      const hostedRef = React.createRef<ViewInstance>();
 
       setPortalChild(
         <Host matchContents>
@@ -324,7 +329,7 @@ export async function test(
     });
 
     it('measures a hosted view nested inside sheet content from the outer hosted view', async () => {
-      const nestedRef = React.createRef<View>();
+      const nestedRef = React.createRef<ViewInstance>();
 
       setPortalChild(
         <Host matchContents>

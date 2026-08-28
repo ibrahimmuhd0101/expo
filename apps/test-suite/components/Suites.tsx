@@ -300,7 +300,7 @@ export default function Suites({
           <SuiteResult suite={item} depth={0} failuresOnly={failuresOnly} />
         )}
         ListHeaderComponent={header}
-        ListFooterComponent={footer}
+        ListFooterComponent={footer ?? undefined}
         stickyHeaderIndices={[0]}
         onContentSizeChange={onContentSizeChange}
         onLayout={onLayout}
