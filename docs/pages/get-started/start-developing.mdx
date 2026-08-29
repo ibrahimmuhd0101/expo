@@ -1,110 +1,488 @@
----
-title: Start developing
-description: Make your first change to an Expo project and see it live on your device.
-hideTOC: true
----
+import React, { useState } from 'react';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
 
-import { ProjectStructure } from '~/scenes/get-started/start-developing/ProjectStructure';
-import { TemplateFeatures } from '~/scenes/get-started/start-developing/TemplateFeatures';
-import { Collapsible } from '~/ui/components/Collapsible';
-import { ContentSpotlight } from '~/ui/components/ContentSpotlight';
-import { Terminal, DiffBlock } from '~/ui/components/Snippet';
-import { Step } from '~/ui/components/Step';
+export default function App() {
+  const [screen, setScreen] = useState('login');
 
-<Step label="1">
-## Start a development server
-To start the development server, run the following command:
+  if (screen === 'login') {
+    return <LoginScreen goRegister={() => setScreen('register')} goHome={() => setScreen('home')} />;
+  }
 
-<Terminal
-  cmd={{
-    npm: ['$ npx expo start'],
-    yarn: ['$ yarn expo start'],
-    pnpm: ['$ pnpm expo start'],
-    bun: ['$ bun expo start'],
-  }}
-/>
+  if (screen === 'register') {
+    return <RegisterScreen goLogin={() => setScreen('login')} goHome={() => setScreen('home')} />;
+  }
 
-</Step>
+  return <HomeScreen />;
+}
 
-<Step label="2">
-## Open the app on your device
+// ================= LOGIN =================
 
-After running the command above, you will see a QR code in your terminal. Scan this QR code to open the app on your device.
+function LoginScreen({ goRegister, goHome }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-If you're using an Android Emulator or iOS Simulator, you can press <kbd>A</kbd> or <kbd>I</kbd> respectively to open the app.
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.authContainer}>
 
-<Collapsible summary="Having problems?">
+        <View style={styles.logoCircle}>
+          <Text style={styles.logoM}>M</Text>
+        </View>
 
-Make sure you are on the same Wi-Fi network on your computer and your device.
+        <Text style={styles.logo}>MAJA</Text>
 
-If it still doesn't work, it may be due to the router configuration — this is common for public networks. You can work around this by choosing the **Tunnel** connection type when starting the development server, then scanning the QR code again.
+        <Text style={styles.title}>Welcome to MAJA</Text>
 
-<Terminal
-  cmd={{
-    npm: ['$ npx expo start --tunnel'],
-    yarn: ['$ yarn expo start --tunnel'],
-    pnpm: ['$ pnpm expo start --tunnel'],
-    bun: ['$ bun expo start --tunnel'],
-  }}
-/>
+        <Text style={styles.subtitle}>
+          Connect. Share. Maja.
+        </Text>
 
-> Using the **Tunnel** connection type will make the app reloads considerably slower than on **LAN** or **Local**, so it's best to avoid tunnel when possible. You may want to install and use an emulator or simulator to speed up development if **Tunnel** is required to access your machine from another device on your network.
+        <TextInput
+          style={styles.input}
+          placeholder="Email or phone number"
+          placeholderTextColor="#777"
+          value={email}
+          onChangeText={setEmail}
+        />
 
-</Collapsible>
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#777"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
 
-</Step>
+        <TouchableOpacity style={styles.loginButton} onPress={goHome}>
+          <Text style={styles.loginText}>Log In</Text>
+        </TouchableOpacity>
 
-<Step label="3">
+        <TouchableOpacity>
+          <Text style={styles.forgot}>Forgot password?</Text>
+        </TouchableOpacity>
 
-## Make your first change
+        <View style={styles.lineRow}>
+          <View style={styles.line} />
+          <Text style={styles.or}>OR</Text>
+          <View style={styles.line} />
+        </View>
 
-Open the **src/app/index.tsx** file in your code editor and make a change.
+        <TouchableOpacity style={styles.createButton} onPress={goRegister}>
+          <Text style={styles.createText}>Create New Account</Text>
+        </TouchableOpacity>
 
-<DiffBlock
-  raw={`diff --git a/src/app/index.tsx b/src/app/index.tsx
-index 45cfa0e..4d1b384 100644
---- a/src/app/index.tsx
-+++ b/src/app/index.tsx
-@@ -17,7 +17,7 @@ export default function HomeScreen() {
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
--           Welcome to&nbsp;Expo
-+           Hello World!
-          </ThemedText>
-        </ThemedView>
-  `}
-/>
+      </View>
+    </SafeAreaView>
+  );
+}
 
-<Collapsible summary="Changes not showing up on your device?">
+// ================= REGISTER =================
 
-Expo Go is configured by default to automatically reload the app whenever a file is changed, but let's make sure to go over the steps to enable it in case somehow things aren't working.
+function RegisterScreen({ goLogin, goHome }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-- Make sure you have the [development mode enabled in Expo CLI](/workflow/development-mode#development-mode).
-- Close the Expo app and reopen it.
-- Once the app is open again, shake your device to reveal the developer menu. Press <kbd>Cmd ⌘</kbd> + <kbd>D</kbd>.
-- If you see **Fast Refresh** enabled, toggle it. If you see **Disable Fast Refresh**, dismiss the developer menu. Now try making another change.
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.authContainer}>
 
-  <ContentSpotlight
-    alt="Developer menu in Expo Go app."
-    src="/static/images/get-started/developer-menu.webp"
-    className="max-w-[540px]"
-  />
+        <View style={styles.logoCircle}>
+          <Text style={styles.logoM}>M</Text>
+        </View>
 
-</Collapsible>
+        <Text style={styles.logo}>MAJA</Text>
 
-</Step>
+        <Text style={styles.title}>Create your account</Text>
 
----
+        <Text style={styles.subtitle}>
+          Join the MAJA community
+        </Text>
 
-## File structure
+        <TextInput
+          style={styles.input}
+          placeholder="Full name"
+          placeholderTextColor="#777"
+          value={name}
+          onChangeText={setName}
+        />
 
-Below, you can get familiar with the default project's file structure:
+        <TextInput
+          style={styles.input}
+          placeholder="Email address"
+          placeholderTextColor="#777"
+          value={email}
+          onChangeText={setEmail}
+        />
 
-<ProjectStructure />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#777"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
 
-## Features
+        <TouchableOpacity style={styles.loginButton} onPress={goHome}>
+          <Text style={styles.loginText}>Create Account</Text>
+        </TouchableOpacity>
 
-The default project template has the following features:
+        <TouchableOpacity onPress={goLogin}>
+          <Text style={styles.forgot}>
+            Already have an account? Log In
+          </Text>
+        </TouchableOpacity>
 
-<TemplateFeatures />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+// ================= HOME =================
+
+function HomeScreen() {
+  return (
+    <SafeAreaView style={styles.container}>
+
+      <View style={styles.header}>
+        <Text style={styles.logo}>MAJA</Text>
+
+        <View style={styles.headerIcons}>
+          <Text style={styles.icon}>🔍</Text>
+          <Text style={styles.icon}>🔔</Text>
+        </View>
+      </View>
+
+      <View style={styles.tabs}>
+        <Text style={styles.activeTab}>For You</Text>
+        <Text style={styles.tab}>Following</Text>
+        <Text style={styles.tab}>Trending</Text>
+      </View>
+
+      <ScrollView>
+
+        <View style={styles.createPost}>
+          <View style={styles.avatar}>
+            <Text>👤</Text>
+          </View>
+
+          <Text style={styles.placeholder}>
+            Me kake tunani?
+          </Text>
+        </View>
+
+        <Post
+          name="Abdullahi"
+          username="@abdullahi"
+          text="Barka da rana MAJA family! ❤️"
+          likes="245"
+          comments="38"
+          reposts="17"
+        />
+
+        <Post
+          name="Aisha"
+          username="@aisha"
+          text="Yau rana ce mai kyau! 😍"
+          likes="120"
+          comments="15"
+          reposts="8"
+        />
+
+      </ScrollView>
+
+      <View style={styles.bottomNav}>
+        <Text>🏠</Text>
+        <Text>🔎</Text>
+
+        <View style={styles.plusButton}>
+          <Text style={styles.plus}>＋</Text>
+        </View>
+
+        <Text>💬</Text>
+        <Text>👤</Text>
+      </View>
+
+    </SafeAreaView>
+  );
+}
+
+// ================= POST =================
+
+function Post({ name, username, text, likes, comments, reposts }) {
+  return (
+    <View style={styles.post}>
+
+      <View style={styles.userRow}>
+
+        <View style={styles.avatar}>
+          <Text>👤</Text>
+        </View>
+
+        <View>
+          <Text style={styles.name}>{name}</Text>
+          <Text style={styles.username}>
+            {username} · 5m
+          </Text>
+        </View>
+
+      </View>
+
+      <Text style={styles.postText}>{text}</Text>
+
+      <View style={styles.actions}>
+        <Text>❤️ {likes}</Text>
+        <Text>💬 {comments}</Text>
+        <Text>🔁 {reposts}</Text>
+        <Text>🔖</Text>
+      </View>
+
+    </View>
+  );
+}
+
+// ================= STYLES =================
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+
+  authContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 25,
+  },
+
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#ffffff',
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  logoM: {
+    color: '#000',
+    fontSize: 45,
+    fontWeight: '900',
+  },
+
+  logo: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+
+  title: {
+    color: '#fff',
+    fontSize: 25,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 35,
+  },
+
+  subtitle: {
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 25,
+  },
+
+  input: {
+    backgroundColor: '#151515',
+    color: '#fff',
+    height: 55,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#292929',
+  },
+
+  loginButton: {
+    height: 55,
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 5,
+  },
+
+  loginText: {
+    color: '#000',
+    fontSize: 17,
+    fontWeight: 'bold',
+  },
+
+  forgot: {
+    color: '#aaa',
+    textAlign: 'center',
+    marginTop: 18,
+  },
+
+  lineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 25,
+  },
+
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#333',
+  },
+
+  or: {
+    color: '#777',
+    marginHorizontal: 12,
+  },
+
+  createButton: {
+    height: 55,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: '#555',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  createText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+
+  header: {
+    height: 60,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+  },
+
+  headerIcons: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+
+  icon: {
+    fontSize: 21,
+  },
+
+  tabs: {
+    height: 50,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+  },
+
+  activeTab: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+
+  tab: {
+    color: '#777',
+  },
+
+  createPost: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+  },
+
+  avatar: {
+    width: 45,
+    height: 45,
+    borderRadius: 25,
+    backgroundColor: '#222',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  placeholder: {
+    color: '#777',
+    marginLeft: 12,
+    fontSize: 16,
+  },
+
+  post: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+  },
+
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  name: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+
+  username: {
+    color: '#777',
+    marginLeft: 10,
+    marginTop: 3,
+  },
+
+  postText: {
+    color: '#fff',
+    fontSize: 16,
+    marginTop: 15,
+    marginBottom: 18,
+  },
+
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  bottomNav: {
+    height: 70,
+    borderTopWidth: 1,
+    borderTopColor: '#222',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+
+  plusButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  plus: {
+    color: '#000',
+    fontSize: 30,
+  },
+});
